@@ -4,7 +4,8 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from utils.config import EMBED_MODEL, DB_DIR
 
-
+# Build a retriever with contextual compression
+# k: number of documents to retrieve
 def build_retriever(k=3):
 
     embed = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
@@ -15,6 +16,7 @@ def build_retriever(k=3):
         search_kwargs={"k": k}
     )
 
+    # similarity_threshold: threshold for filtering documents based on embedding similarity
     emb_filter = EmbeddingsFilter(
         embeddings=embed,
         similarity_threshold=0.5

@@ -6,7 +6,8 @@ from utils.crawler import crawl_from_txt
 
 
 st.title("Custom RAG Demo")
- 
+
+# Cache resources to avoid reloading on every interaction
 @st.cache_resource
 def cached_corpus():
     crawl_from_txt("data/urls.txt")
@@ -27,7 +28,7 @@ def cached_rag_chain():
     retriever = cached_retriever()
     return build_rag_chain(llm, retriever)
 
-
+# Build the RAG chain
 rag_chain = cached_rag_chain()
 
 query = st.text_input("Ask a question:")

@@ -1,3 +1,4 @@
+# Paths and model configurations
 DB_DIR = "data/chroma"
 CORPUS_DIR = "data/corpus"
 
