@@ -1,7 +1,7 @@
 from utils.crawler import crawl_from_txt
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from utils.config import DB_DIR, EMBED_MODEL
 
 def run_ingestion(txt_path: str):
@@ -20,10 +20,8 @@ def run_ingestion(txt_path: str):
         model_kwargs={"device": "cpu"}
     )
 
-    vectordb = Chroma.from_documents(
+    Chroma.from_documents(
         documents=chunks,
         embedding=embed,
         persist_directory=DB_DIR
     )
-
-    return vectordb

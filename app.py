@@ -1,8 +1,8 @@
 import streamlit as st
+from rag.ingest import run_ingestion
 from rag.llm import load_llm
 from rag.chain import build_rag_chain
 from rag.retriever import build_retriever
-from utils.crawler import crawl_from_txt
 
 
 st.title("Custom RAG Demo")
@@ -10,7 +10,7 @@ st.title("Custom RAG Demo")
 # Cache resources to avoid reloading on every interaction
 @st.cache_resource
 def cached_corpus():
-    crawl_from_txt("data/urls.txt")
+    run_ingestion("data/urls.txt")
     return True
 
 @st.cache_resource
