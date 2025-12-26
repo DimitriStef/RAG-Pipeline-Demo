@@ -16,10 +16,12 @@ def build_retriever(k=3):
         search_kwargs={"k": k}
     )
 
-    # similarity_threshold: threshold for filtering documents based on embedding similarity
+    # `similarity_threshold`: cosine-similarity cutoff used to filter retrieved documents.
+    # Scale: cosine similarity ranges from -1.0 (opposite) to 1.0 (identical); higher = more similar.
+    # Trade-off: higher thresholds reduce noise (lower recall), lower thresholds increase recall but add irrelevant documents.
     emb_filter = EmbeddingsFilter(
         embeddings=embed,
-        similarity_threshold=0.5
+        similarity_threshold=0.4
     )
 
     return ContextualCompressionRetriever(
