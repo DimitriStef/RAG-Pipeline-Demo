@@ -2,60 +2,128 @@ import streamlit as st
 from rag.ingest import run_ingestion
 from rag.llm import load_llm
 from rag.chain import build_rag_chain
-from rag.retriever import build_retriever
 
 
-st.title("Custom RAG Demo")
+st.set_page_config(page_title="RAG Demo", layout="wide", page_icon=":mag_right:")
+
+CSS = """
+/* Simple chat bubbles and source card styles */
+.chat {
+  display: block;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+.user { background: #e6f0ff; color: #022c64; text-align: right }
+.assistant { background: #f7f7f9; color: #111; text-align: left }
+.source-card { border: 1px solid #eee; padding: 12px; border-radius: 8px; margin-bottom: 8px; background: #fff }
+.muted { color: #666; font-size: 12px }
+"""
+
+st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
+
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.header("RAG Demo")
+    st.markdown("Use the left panel to ask questions. Results show on submit.")
+
+with col2:
+    st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=120)
+
 
 # Cache resources to avoid reloading on every interaction
 @st.cache_resource
 def cached_corpus():
     run_ingestion("data/urls.txt")
-    return True
-
-@st.cache_resource
-def cached_retriever():
-    cached_corpus()
-    return build_retriever()
 
 @st.cache_resource
 def cached_llm():
     return load_llm()
 
+
 @st.cache_resource
-def cached_rag_chain():
-    llm = cached_llm()
-    retriever = cached_retriever()
-    return build_rag_chain(llm, retriever)
+def cached_rag_chain(_llm, k):
+    return build_rag_chain(_llm, k)
+
 
 # Build the RAG chain
-rag_chain = cached_rag_chain()
+cached_corpus()
+llm = cached_llm()
 
-query = st.text_input("Ask a question:")
-if query:
-    result = rag_chain.invoke({"input": query})
+# Sidebar controls
+st.sidebar.header("Settings")
+top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 10, 4)
 
-    st.subheader("Answer")
-    st.write(result.get("answer") or result.get("result") or result)
+if st.sidebar.button("Re-run ingestion"):
+    with st.spinner("Re-running ingestion..."):
+        run_ingestion("data/urls.txt")
+        st.cache_resource.clear()
+        st.success("Ingestion complete — caches cleared.")
 
-    context_docs = (
-        result.get("context")
-        or result.get("source_documents")
-        or []
+st.sidebar.markdown("---")
+sample = st.sidebar.selectbox("Try a sample question", [
+    "What is this dataset about?",
+    "Summarize key points from the corpus.",
+    "How can I reproduce the pipeline?",
+])
+if st.sidebar.button("Use sample"):
+    st.session_state['sample_query'] = sample
+
+# Rebuild rag_chain using the current `top_k` so updates take effect
+rag_chain = cached_rag_chain(llm, top_k)
+ 
+with st.container():
+
+    query = st.chat_input(
+        "Ask a question",
+        key="query_input"
     )
 
-    st.subheader("Context Documents")
+    if query and query.strip():
+        with st.spinner("Thinking — retrieving context and generating answer..."):
+            result = rag_chain.invoke({
+                "input": query,
+                "top_k": top_k
+            })
 
-    if not context_docs:
-        st.write("No documents returned.")
-    else:
-        for i, doc in enumerate(context_docs, 1):
-            meta = doc.metadata
+        answer = result.get("answer") or result.get("result") or result
 
-            with st.expander(f"Document {i}"):
-                st.markdown(f"**Source:** {meta.get('source')}")
-                st.markdown(f"**Index:** {meta.get('start_index')}")
+        left, right = st.columns([3, 1])
 
-                preview = doc.page_content[:300].replace("\n", " ") + " ..."
-                st.markdown("**Content Preview:**")
-                st.write(preview)
+        with left:
+            st.subheader("Answer")
+            st.write(answer)
+
+            st.download_button("Download answer", answer, file_name="answer.txt")
+
+            meta_info = []
+            if isinstance(result, dict):
+                meta_info.append(f"Sources: {len(result.get('source_documents', []) or result.get('context') or [])}")
+
+        with right:
+            st.subheader("Context Documents")
+
+            context_docs = (
+                result.get("context")
+                or result.get("source_documents")
+                or []
+            )
+
+            if not context_docs:
+                st.write("No documents returned.")
+            else:
+                for i, doc in enumerate(context_docs[:top_k], 1):
+                    meta = getattr(doc, 'metadata', {}) or {}
+                    src = meta.get('source') or meta.get('url') or f"Document {i}"
+                    content = getattr(doc, 'page_content', str(doc))
+
+                    with st.expander(f"{src}"):
+                        st.markdown(f"**Source:** {src}")
+                        if meta.get('start_index') is not None:
+                            st.markdown(f"**Index:** {meta.get('start_index')}")
+
+                        preview = content[:800].replace("\n", " ")
+                        st.write(preview)
+                        st.download_button(f"Download doc {i}", preview, file_name=f"doc_{i}.txt")
+
