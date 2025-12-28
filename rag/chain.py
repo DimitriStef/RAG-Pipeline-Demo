@@ -2,11 +2,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_classic.chains.retrieval import create_retrieval_chain
 import textwrap
+from rag.retriever import build_retriever
 
 # The stuff-documents chain injects retrieved docs into {context} and formats the full
 # TinyLlama prompt before calling the LLM. The retrieval chain then couples this with the
 # retriever to produce a complete RAG pipeline (query → retrieve → format prompt → generate).
-def build_rag_chain(llm, retriever):
+def build_rag_chain(llm, k):
     # Prompt engineering based on TinyLlama's recommended prompt, from Ollama's website
     SYSTEM = "You are a helpful AI assistant that summarises information."
 
@@ -28,5 +29,7 @@ def build_rag_chain(llm, retriever):
     prompt = ChatPromptTemplate.from_template(TINYLLAMA_PROMPT).partial(system=SYSTEM)
 
     doc_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
+
+    retriever = build_retriever(k=k)
 
     return create_retrieval_chain(retriever, doc_chain)
