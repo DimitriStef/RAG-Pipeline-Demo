@@ -28,8 +28,8 @@ with col1:
     st.header("RAG Demo")
     st.markdown("Use the left panel to ask questions. Results show on submit.")
 
-with col2:
-    st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=120)
+# with col2:
+#     st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=120)
 
 
 # Cache resources to avoid reloading on every interaction
