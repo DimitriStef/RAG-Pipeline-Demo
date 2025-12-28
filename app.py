@@ -29,7 +29,7 @@ with col1:
     st.markdown("Use the left panel to ask questions. Results show on submit.")
 
 # with col2:
-#     st.image("https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png", width=120)
+#     st.image("link", width=120)
 
 
 # Cache resources to avoid reloading on every interaction
@@ -60,15 +60,6 @@ if st.sidebar.button("Re-run ingestion"):
         run_ingestion("data/urls.txt")
         st.cache_resource.clear()
         st.success("Ingestion complete — caches cleared.")
-
-st.sidebar.markdown("---")
-sample = st.sidebar.selectbox("Try a sample question", [
-    "What is this dataset about?",
-    "Summarize key points from the corpus.",
-    "How can I reproduce the pipeline?",
-])
-if st.sidebar.button("Use sample"):
-    st.session_state['sample_query'] = sample
 
 # Rebuild rag_chain using the current `top_k` so updates take effect
 rag_chain = cached_rag_chain(llm, top_k)
