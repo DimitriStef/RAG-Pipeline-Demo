@@ -20,18 +20,17 @@ def build_retriever(k=3, use_mmr=True):
             search_kwargs={
                 "k": k,
                 "fetch_k": k * 4,
-                "lambda_mult": 0.5
+                "lambda_mult": 0.8
             }
         )
     else:
-        # `similarity_threshold`: cosine-similarity cutoff used to filter retrieved documents.
-        # Scale: cosine similarity ranges from -1.0 (opposite) to 1.0 (identical); higher = more similar.
+        # `score_threshold`: cosine-similarity cutoff used to filter retrieved documents.
         # Trade-off: higher thresholds reduce noise (lower recall), lower thresholds increase recall but add irrelevant documents.
         return vectordb.as_retriever(
             search_type="similarity_score_threshold",
             search_kwargs={
                 "k": k,
-                "score_threshold": 0.4  # Same filtering, but at retrieval time
+                "score_threshold": 0.5
             }
         )
 
