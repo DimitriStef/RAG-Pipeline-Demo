@@ -2,6 +2,7 @@ import re
 import unicodedata
 from pathlib import Path
 from langchain_community.document_loaders import WebBaseLoader, UnstructuredURLLoader, PyPDFLoader
+from langchain_core.documents import Document
 import requests
 import hashlib
 import json
@@ -60,7 +61,6 @@ def _url_to_cache_path(url: str) -> Path:
 
 
 def load_from_url(url):
-    """Return objects in the EXACT SAME format as loader.load(), but cached."""
     cache_path = _url_to_cache_path(url)
 
     if cache_path.exists():
@@ -72,10 +72,9 @@ def load_from_url(url):
 
             restored_docs = []
             for item in cached_list:
-                obj = type("Doc", (), {})()
-                obj.page_content = item["text"]
-                obj.metadata = {"source": url}
-                restored_docs.append(obj)
+                meta = item.get("metadata") or {"source": url}
+                doc = Document(page_content=item.get("text", ""), metadata=meta)
+                restored_docs.append(doc)
 
             return restored_docs
 
@@ -104,7 +103,7 @@ def load_from_url(url):
 
             cleaned_cache.append({
                 "text": d.page_content,
-                "source": url
+                "metadata": d.metadata,
             })
 
         # Save to cache
