@@ -20,7 +20,7 @@ def build_retriever(k=3, use_mmr=True):
             search_kwargs={
                 "k": k,
                 "fetch_k": k * 4,
-                "lambda_mult": 0.8
+                "lambda_mult": 0.7
             }
         )
     else:

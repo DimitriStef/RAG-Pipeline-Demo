@@ -7,6 +7,10 @@ from utils.config import DB_DIR, EMBED_MODEL
 def run_ingestion(txt_path: str):
     docs = crawl_from_txt(txt_path)
 
+    if not docs:
+        print("No new documents to ingest.")
+        return
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=400,
         chunk_overlap=20,
