@@ -7,7 +7,7 @@ from rag.retriever import build_retriever
 # The stuff-documents chain injects retrieved docs into {context} and formats the full
 # TinyLlama prompt before calling the LLM. The retrieval chain then couples this with the
 # retriever to produce a complete RAG pipeline (query → retrieve → format prompt → generate).
-def build_rag_chain(llm, k):
+def build_rag_chain(llm, k, use_mmr=True):
     # Prompt engineering based on TinyLlama's recommended prompt, from Ollama's website
     SYSTEM = "You are a helpful AI assistant that summarises information."
 
@@ -30,6 +30,6 @@ def build_rag_chain(llm, k):
 
     doc_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
 
-    retriever = build_retriever(k=k)
+    retriever = build_retriever(k=k, use_mmr=use_mmr)
 
     return create_retrieval_chain(retriever, doc_chain)

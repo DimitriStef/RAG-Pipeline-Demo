@@ -41,28 +41,26 @@ def cached_corpus():
 def cached_llm():
     return load_llm()
 
-
 @st.cache_resource
-def cached_rag_chain(_llm, k):
-    return build_rag_chain(_llm, k)
+def cached_rag_chain(_llm, k, use_mmr):
+    return build_rag_chain(_llm, k, use_mmr)
 
-
-# Build the RAG chain
-cached_corpus()
-llm = cached_llm()
 
 # Sidebar controls
 st.sidebar.header("Settings")
-top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 10, 4)
+top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 20, 4)
+use_mmr = st.sidebar.checkbox("Use MMR retrieval", value=True)
 
 if st.sidebar.button("Re-run ingestion"):
     with st.spinner("Re-running ingestion..."):
-        run_ingestion("data/urls.txt")
-        st.cache_resource.clear()
+        run_ingestion.clear()
+        run_ingestion("data/urls.txt")    
         st.success("Ingestion complete — caches cleared.")
 
-# Rebuild rag_chain using the current `top_k` so updates take effect
-rag_chain = cached_rag_chain(llm, top_k)
+# (Re)build the RAG chain on the fly
+cached_corpus()
+llm = cached_llm()
+rag_chain = cached_rag_chain(llm, top_k, use_mmr)
  
 with st.container():
 
@@ -104,16 +102,15 @@ with st.container():
             if not context_docs:
                 st.write("No documents returned.")
             else:
-                for i, doc in enumerate(context_docs[:top_k], 1):
+                for i, doc in enumerate(context_docs, 1):
                     meta = getattr(doc, 'metadata', {}) or {}
                     src = meta.get('source') or meta.get('url') or f"Document {i}"
                     content = getattr(doc, 'page_content', str(doc))
-
-                    with st.expander(f"{src}"):
+                    
+                    with st.expander(f"[{i}/{len(context_docs)}] {src}"):
                         st.markdown(f"**Source:** {src}")
                         if meta.get('start_index') is not None:
                             st.markdown(f"**Index:** {meta.get('start_index')}")
-
                         preview = content[:800].replace("\n", " ")
                         st.write(preview)
                         st.download_button(f"Download doc {i}", preview, file_name=f"doc_{i}.txt")
