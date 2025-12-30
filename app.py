@@ -53,11 +53,11 @@ use_mmr = st.sidebar.checkbox("Use MMR retrieval", value=True)
 
 if st.sidebar.button("Re-run ingestion"):
     with st.spinner("Re-running ingestion..."):
-        run_ingestion.clear()
-        run_ingestion("data/urls.txt")    
+        cached_corpus.clear()
+        cached_corpus()
         st.success("Ingestion complete — caches cleared.")
 
-# (Re)build the RAG chain on the fly
+# Build the RAG chain
 cached_corpus()
 llm = cached_llm()
 rag_chain = cached_rag_chain(llm, top_k, use_mmr)
