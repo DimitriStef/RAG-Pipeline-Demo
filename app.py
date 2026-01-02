@@ -35,7 +35,7 @@ with col1:
 # Cache resources to avoid reloading on every interaction
 @st.cache_resource
 def cached_corpus():
-    run_ingestion("data/urls.txt")
+    run_ingestion()
 
 @st.cache_resource
 def cached_llm():
@@ -108,7 +108,6 @@ with st.container():
                     content = getattr(doc, 'page_content', str(doc))
                     
                     with st.expander(f"[{i}/{len(context_docs)}] {src}"):
-                        st.markdown(f"**Source:** {src}")
                         if meta.get('start_index') is not None:
                             st.markdown(f"**Index:** {meta.get('start_index')}")
                         preview = content[:800].replace("\n", " ")
