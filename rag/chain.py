@@ -20,7 +20,7 @@ def build_rag_chain(llm, k, use_mmr=True):
     {context}
 
     Instructions:
-    Answer in a few sentences. Answer only based on the context. 
+    Answer in a few structured sentences. Answer only based on the context. 
     Do not repeat the question or yourself. Do not include your thought process.</s>
     <|assistant|>
     """)
