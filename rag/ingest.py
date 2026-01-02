@@ -1,23 +1,53 @@
 from utils.crawler import crawl_from_txt
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from langchain_text_splitters import HTMLSemanticPreservingSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+
 from utils.config import DB_DIR, EMBED_MODEL
 
-def run_ingestion(txt_path: str):
-    docs = crawl_from_txt(txt_path)
 
-    if not docs:
+def chunk_fragments(fragments):
+    splitter_base = dict(
+        max_chunk_size=1000,
+        separators=["\n\n", "\n", ". ", "! ", "? "],
+        elements_to_preserve=["table", "ul", "ol", "pre", "code"],
+        denylist_tags=["script", "style", "head", "sup"],
+        stopword_removal=False,
+        normalize_text=False,
+        headers_to_split_on=[],
+    )
+
+    splitter_section = HTMLSemanticPreservingSplitter(chunk_overlap=0, **splitter_base)
+    splitter_subsection = HTMLSemanticPreservingSplitter(chunk_overlap=100, **splitter_base)
+
+    chunks = []
+    for frag in fragments:
+        has_subsection = bool(frag.metadata.get("has_subsection", False))
+        splitter = splitter_subsection if has_subsection else splitter_section
+
+        out_docs = splitter.split_text(frag.page_content)
+
+        upstream_meta = dict(frag.metadata)
+        for d in out_docs:
+            d.metadata.update(upstream_meta)
+
+        chunks.extend(out_docs)
+
+    return chunks
+
+
+def run_ingestion():
+    fragments = crawl_from_txt()
+
+    if not fragments:
         print("No new documents to ingest.")
         return
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=400,
-        chunk_overlap=20,
-        add_start_index=True
-    )
-
-    chunks = splitter.split_documents(docs)
+    chunks = chunk_fragments(fragments)
+    if not chunks:
+        print("No chunks produced from extracted fragments.")
+        return
 
     embed = HuggingFaceEmbeddings(
         model_name=EMBED_MODEL,

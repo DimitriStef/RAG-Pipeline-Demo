@@ -1,61 +1,98 @@
 from pathlib import Path
-import re
 import json
 import hashlib
-from bs4 import BeautifulSoup
+
+from bs4 import Tag
 from langchain_core.documents import Document
 from langchain_community.document_loaders import WebBaseLoader
-from utils.config import CORPUS_DIR
+
+from utils.config import DATA_DIR, CORPUS_DIR
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATA_PATH = BASE_DIR / DATA_DIR
+DATA_PATH.mkdir(parents=True, exist_ok=True)
+
 CORPUS_PATH = BASE_DIR / CORPUS_DIR
 CORPUS_PATH.mkdir(parents=True, exist_ok=True)
 
-CITATION_RE = re.compile(r"\[\d+\]")
+# Wikipedia-specific noise (templates / navigation / references scaffolding)
+NOISE_SELECTORS = (
+    "script",
+    "style",
+    "sup.reference",
+    ".mw-editsection",
+    ".navbox",
+    ".infobox",
+    ".sidebar",
+    ".metadata",
+    "#toc",
+    ".toc",
+    ".mw-references-wrap",
+    ".reflist",
+    ".catlinks",
+    ".hatnote",
+    ".mainarticle",
+    ".dablink",
+    ".rellink",
+)
 
 
-def extract_wikipedia_content(soup: BeautifulSoup) -> dict:
-    """Extract title and main paragraph content from a Wikipedia page."""
+def extract_wikipedia_fragments(soup):
     title_tag = soup.select_one("h1#firstHeading")
     title = title_tag.get_text(strip=True) if title_tag else "Unknown Title"
 
-    content_div = soup.select_one("div#mw-content-text")
-    if not content_div:
-        return {"title": title, "content": ""}
+    root = soup.select_one("div#mw-content-text div.mw-parser-output") or soup.select_one("div#mw-content-text")
+    if not root:
+        return title, []
 
-    # Remove elements that often pollute the paragraph text
-    for tag in content_div.select(
-        "script, style, sup, .navbox, .infobox, .sidebar, .metadata"
-    ):
-        tag.decompose()
+    for sel in NOISE_SELECTORS:
+        for tag in root.select(sel):
+            tag.decompose()
 
-    paragraphs = [
-        p.get_text(" ", strip=True)
-        for p in content_div.find_all("p")
-        if p.get_text(strip=True)
-    ]
+    fragments = []
+    section = "Lead"
+    subsection = None
+    current = []
 
-    content = "\n\n".join(paragraphs)
-    content = CITATION_RE.sub("", content)
-    content = re.sub(r"[ \t]+", " ", content).strip()  # normalize intra-line spaces
+    for node in root.children:
+        if not isinstance(node, Tag):
+            continue
 
-    return {"title": title, "content": content}
+        if node.name == "h2" or node.name == "h3":
+            if current:
+                body_html = "".join(str(x) for x in current).strip()
+                if body_html:
+                    fragments.append((body_html, section, subsection))
+                current = []
+
+            header_text = node.get_text(" ", strip=True)
+            if node.name == "h2":
+                section = header_text or "Untitled section"
+                subsection = None
+            else:
+                subsection = header_text or "Untitled subsection"
+
+            continue
+
+        current.append(node)
+
+    if current:
+        body_html = "".join(str(x) for x in current).strip()
+        if body_html:
+            fragments.append((body_html, section, subsection))
+
+    return title, fragments
 
 
 def _url_to_cache_path(url: str) -> Path:
-    """Generate cache file path from URL hash."""
     h = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return CORPUS_PATH / f"{h}.json"
 
 
 def _cache_is_valid(cache_path: Path, url: str) -> bool:
-    """
-    Return True if cache exists and is valid JSON.
-    If corrupted, delete it and return False (so caller refetches).
-    """
     if not cache_path.exists():
         return False
-
     try:
         json.loads(cache_path.read_text(encoding="utf-8"))
         print(f"Loaded cached: {url}")
@@ -67,49 +104,54 @@ def _cache_is_valid(cache_path: Path, url: str) -> bool:
 
 
 def load_from_url(url: str) -> list[Document]:
-    """Load Wikipedia article from URL with caching."""
     cache_path = _url_to_cache_path(url)
 
-    # If document is cached, return empty list to avoid duplicates.
     if _cache_is_valid(cache_path, url):
         return []
 
-    # Fetch and parse
     try:
         print(f"Fetching: {url}")
-        loader = WebBaseLoader(url)
-        soup = loader.scrape()
+        soup = WebBaseLoader(url).scrape()
 
-        extracted = extract_wikipedia_content(soup)
-        if not extracted["content"]:
+        title, fragments = extract_wikipedia_fragments(soup)
+        if not fragments:
             print(f"Warning: No content extracted from {url}")
             return []
 
-        doc = Document(
-            page_content=extracted["content"],
-            metadata={"source": url, "title": extracted["title"]},
-        )
+        docs: list[Document] = []
+        for i, (html, section, subsection) in enumerate(fragments):
+            docs.append(
+                Document(
+                    page_content=html,
+                    metadata={
+                        "source": url,
+                        "title": title,
+                        "section": section,
+                        "subsection": subsection,
+                        "has_subsection": bool(subsection),
+                        "fragment_index": i,
+                    },
+                )
+            )
 
         cache_path.write_text(
             json.dumps(
-                {"content": doc.page_content, "metadata": doc.metadata},
+                [{"content": d.page_content, "metadata": d.metadata} for d in docs],
                 ensure_ascii=False,
                 indent=2,
             ),
             encoding="utf-8",
         )
         print(f"Saved to cache: {url}")
-        return [doc]
+        return docs
 
     except Exception as e:
         print(f"Error loading {url}: {e}")
         return []
 
 
-def crawl_from_txt(file_path: str) -> list[Document]:
-    """Load multiple Wikipedia articles from a text file of URLs."""
-    p = Path(file_path)
-    path = p if p.is_absolute() else (BASE_DIR / p)
+def crawl_from_txt():
+    path = DATA_PATH / "urls.txt"
     print(f"Reading URLs from {path}...")
 
     if not path.exists():
@@ -126,5 +168,5 @@ def crawl_from_txt(file_path: str) -> list[Document]:
     for url in urls:
         docs.extend(load_from_url(url))
 
-    print(f"Loaded {len(docs)} documents from {len(urls)} URLs.")
+    print(f"Loaded {len(docs)} extracted fragments from {len(urls)} URLs.")
     return docs
