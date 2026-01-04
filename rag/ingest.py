@@ -1,15 +1,14 @@
 from utils.crawler import crawl_from_txt
+from utils.config import DB_DIR, EMBED_MODEL
 
 from langchain_text_splitters import HTMLSemanticPreservingSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-from utils.config import DB_DIR, EMBED_MODEL
-
 
 def chunk_fragments(fragments):
     splitter_base = dict(
-        max_chunk_size=1000,
+        max_chunk_size=600,
         separators=["\n\n", "\n", ". ", "! ", "? "],
         elements_to_preserve=["table", "ul", "ol", "pre", "code"],
         denylist_tags=["script", "style", "head", "sup"],
@@ -19,7 +18,7 @@ def chunk_fragments(fragments):
     )
 
     splitter_section = HTMLSemanticPreservingSplitter(chunk_overlap=0, **splitter_base)
-    splitter_subsection = HTMLSemanticPreservingSplitter(chunk_overlap=100, **splitter_base)
+    splitter_subsection = HTMLSemanticPreservingSplitter(chunk_overlap=60, **splitter_base)
 
     chunks = []
     for frag in fragments:
