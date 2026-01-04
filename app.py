@@ -42,14 +42,16 @@ def cached_llm():
     return load_llm()
 
 @st.cache_resource
-def cached_rag_chain(_llm, k, use_mmr):
-    return build_rag_chain(_llm, k, use_mmr)
+def cached_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank):
+    return build_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank)
 
 
 # Sidebar controls
 st.sidebar.header("Settings")
-top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 20, 4)
+top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 10, 6)
 use_mmr = st.sidebar.checkbox("Use MMR retrieval", value=True)
+use_bm25 = st.sidebar.checkbox("Use BM25 hybrid retrieval", value=True)
+use_rerank = st.sidebar.checkbox("Use cross-encoder reranking", value=True)
 
 if st.sidebar.button("Re-run ingestion"):
     with st.spinner("Re-running ingestion..."):
@@ -60,7 +62,7 @@ if st.sidebar.button("Re-run ingestion"):
 # Build the RAG chain
 cached_corpus()
 llm = cached_llm()
-rag_chain = cached_rag_chain(llm, top_k, use_mmr)
+rag_chain = cached_rag_chain(llm, top_k, use_mmr, use_bm25, use_rerank)
  
 with st.container():
 
