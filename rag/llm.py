@@ -15,7 +15,7 @@ def load_llm():
         "text-generation",
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=256,
+        max_new_tokens=1024,
         do_sample=False, # deterministic output
         pad_token_id=tokenizer.eos_token_id,
         repetition_penalty=1.07,
