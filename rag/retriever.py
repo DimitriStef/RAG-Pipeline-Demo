@@ -20,13 +20,12 @@ def _base_retriever(vectordb: Chroma, k: int, use_mmr: bool):
     # Threshold mode: higher cutoff = cleaner, but can miss borderline-relevant chunks
     return vectordb.as_retriever(
         search_type="similarity_score_threshold",
-        search_kwargs={"k": k, "score_threshold": 0.5},
+        search_kwargs={"k": k, "score_threshold": 0.75},
     )
 
 
 def _bm25_retriever_from_chroma(vectordb: Chroma, k: int):
     # Pull stored texts+metadata from Chroma to build BM25 index.
-    # For large corpora, cache/persist this instead of rebuilding each run.
     raw = vectordb.get(include=["documents", "metadatas"])
     docs = [
         Document(page_content=t, metadata=m or {})
@@ -53,7 +52,6 @@ def build_retriever(
         retriever = EnsembleRetriever(retrievers=[bm25, base], weights=[0.3, 0.7])
 
     if use_rerank:
-        # Cross-encoder rerank: better precision, higher latency than embeddings
         reranker = HuggingFaceCrossEncoder(model_name=RERANK_MODEL, model_kwargs={"device": "cpu"})
         compressor = CrossEncoderReranker(model=reranker, top_n=k)
 
