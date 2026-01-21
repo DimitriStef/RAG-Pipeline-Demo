@@ -85,12 +85,12 @@ def extract_wikipedia_fragments(soup):
     return title, fragments
 
 
-def _url_to_cache_path(url: str) -> Path:
+def _url_to_cache_path(url) -> Path:
     h = hashlib.sha256(url.encode("utf-8")).hexdigest()
     return CORPUS_PATH / f"{h}.json"
 
 
-def _cache_is_valid(cache_path: Path, url: str) -> bool:
+def _cache_is_valid(cache_path, url) -> bool:
     if not cache_path.exists():
         return False
     try:
@@ -103,7 +103,7 @@ def _cache_is_valid(cache_path: Path, url: str) -> bool:
         return False
 
 
-def load_from_url(url: str) -> list[Document]:
+def load_from_url(url) -> list[Document]:
     cache_path = _url_to_cache_path(url)
 
     if _cache_is_valid(cache_path, url):

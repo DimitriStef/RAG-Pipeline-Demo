@@ -10,7 +10,7 @@ from langchain_chroma import Chroma
 from utils.config import EMBED_MODEL, DB_DIR, RERANK_MODEL
 
 
-def _base_retriever(vectordb: Chroma, k: int, use_mmr: bool):
+def _base_retriever(vectordb, k, use_mmr):
     if use_mmr:
         # MMR: trades relevance for diversity; reduces near-duplicate chunks
         return vectordb.as_retriever(
@@ -24,7 +24,7 @@ def _base_retriever(vectordb: Chroma, k: int, use_mmr: bool):
     )
 
 
-def _bm25_retriever_from_chroma(vectordb: Chroma, k: int):
+def _bm25_retriever_from_chroma(vectordb, k):
     # Pull stored texts+metadata from Chroma to build BM25 index.
     raw = vectordb.get(include=["documents", "metadatas"])
     docs = [
@@ -34,12 +34,7 @@ def _bm25_retriever_from_chroma(vectordb: Chroma, k: int):
     return BM25Retriever.from_documents(docs, k=k)
 
 
-def build_retriever(
-    k: int = 6,
-    use_mmr: bool = True,
-    use_bm25: bool = True,
-    use_rerank: bool = True
-):
+def build_retriever(k = 6, use_mmr = True, use_bm25 = True, use_rerank = True):
     embed = HuggingFaceEmbeddings(model_name=EMBED_MODEL, model_kwargs={"device": "cpu"})
     vectordb = Chroma(persist_directory=DB_DIR, embedding_function=embed)
 

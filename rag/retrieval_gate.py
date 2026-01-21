@@ -10,7 +10,7 @@ qa = pipeline(
     )
 
 
-def to_context_text(ctx) -> str:
+def to_context_text(ctx):
     if not ctx:
         return ""
 
@@ -30,7 +30,7 @@ def to_context_text(ctx) -> str:
     return str(ctx)
 
 
-def is_context_sufficient(question: str, context: str, margin: float = 0.05) -> bool:
+def is_context_sufficient(question, context, margin = 0.05):
     r = qa(question=question, context=context, top_k=2)
 
     # Expect list[dict] for top_k
