@@ -210,3 +210,7 @@ __marimo__/
 # --- RAG data directories ---
 data/chroma/
 data/corpus/
+
+# VSCode files
+*.vscode
+*.code-workspace
