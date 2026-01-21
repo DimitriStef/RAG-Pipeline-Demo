@@ -6,6 +6,8 @@ langchain-core
 langchain-community
 langchain-classic
 langchain-chroma
+langchain-huggingface
+rank_bm25
 hf_xet
 accelerate
 streamlit
