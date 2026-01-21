@@ -79,7 +79,7 @@ with st.container():
                 "input": query,
                 "top_k": top_k
             })
-            parse_gate_decision(query, result.get("context") or result)
+            parse_gate_decision(query, result.get("context"))
 
         with st.spinner("Retrieving context and generating answer..."):
             result = rag_chain.invoke({
@@ -87,7 +87,7 @@ with st.container():
                 "top_k": top_k
             })
 
-        answer = result.get("answer") or result.get("result") or result
+        answer = result.get("answer")
 
         left, right = st.columns([3, 1])
 
@@ -99,23 +99,19 @@ with st.container():
 
             meta_info = []
             if isinstance(result, dict):
-                meta_info.append(f"Sources: {len(result.get('source_documents', []) or result.get('context') or [])}")
+                meta_info.append(f"Sources: {len(result.get('source', []))}")
 
         with right:
             st.subheader("Context Documents")
 
-            context_docs = (
-                result.get("context")
-                or result.get("source_documents")
-                or []
-            )
+            context_docs = result.get("context")
 
             if not context_docs:
                 st.write("No documents returned.")
             else:
                 for i, doc in enumerate(context_docs, 1):
                     meta = getattr(doc, 'metadata', {}) or {}
-                    src = meta.get('source') or meta.get('url') or f"Document {i}"
+                    src = meta.get('source')
                     content = getattr(doc, 'page_content', str(doc))
                     
                     with st.expander(f"[{i}/{len(context_docs)}] {src}"):

@@ -11,8 +11,7 @@ TOPIC_MODEL = "facebook/genre-kilt"
 # Prompts
 CHATBOT_SYSTEM = "You are a summariser. Answer using only the provided context. " \
                 "Do not repeat yourself, or the question, in your answer. " \
-                "Keep your sentences short, and your answer concise and complete." \
-                "if the context does not help, avoid answering. " \
+                "Keep your sentences short, and your answer concise and complete, in nice paragraphs."
 
 CHATBOT_PROMPT = """ \
     <|system|>

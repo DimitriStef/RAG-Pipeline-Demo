@@ -18,7 +18,7 @@ def load_llm():
         max_new_tokens=1024,
         do_sample=False, # deterministic output
         pad_token_id=tokenizer.eos_token_id,
-        repetition_penalty=1.07,
+        repetition_penalty=1.06,
         return_full_text=False
     )
 
