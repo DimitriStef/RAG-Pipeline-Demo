@@ -2,6 +2,8 @@ import streamlit as st
 from rag.ingest import run_ingestion
 from rag.llm import load_llm
 from rag.chain import build_rag_chain
+from rag.retrieval_gate import parse_gate_decision
+from utils.config import CHATBOT_SYSTEM, CHATBOT_PROMPT
 
 
 st.set_page_config(page_title="RAG Demo", layout="wide", page_icon=":mag_right:")
@@ -26,7 +28,7 @@ col1, col2 = st.columns([3, 1])
 
 with col1:
     st.header("RAG Demo")
-    st.markdown("Use the left panel to ask questions. Results show on submit.")
+    st.markdown("Use the left panel to adjust settings. Results show on submit.")
 
 # with col2:
 #     st.image("link", width=120)
@@ -42,8 +44,8 @@ def cached_llm():
     return load_llm()
 
 @st.cache_resource
-def cached_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank):
-    return build_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank)
+def cached_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank, system, prompt):
+    return build_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank, system, prompt)
 
 
 # Sidebar controls
@@ -59,20 +61,27 @@ if st.sidebar.button("Re-run ingestion"):
         cached_corpus()
         st.success("Ingestion complete — caches cleared.")
 
-# Build the RAG chain
+# Build the RAG gate and chatbot chains
 cached_corpus()
 llm = cached_llm()
-rag_chain = cached_rag_chain(llm, top_k, use_mmr, use_bm25, use_rerank)
+rag_chain = cached_rag_chain(llm, top_k, use_mmr, use_bm25, use_rerank, CHATBOT_SYSTEM, CHATBOT_PROMPT)
  
 with st.container():
-
     query = st.chat_input(
         "Ask a question",
         key="query_input"
     )
 
     if query and query.strip():
-        with st.spinner("Thinking — retrieving context and generating answer..."):
+
+        with st.spinner("Evaluating context sufficiency..."):
+            result = rag_chain.invoke({
+                "input": query,
+                "top_k": top_k
+            })
+            parse_gate_decision(query, result.get("context") or result)
+
+        with st.spinner("Retrieving context and generating answer..."):
             result = rag_chain.invoke({
                 "input": query,
                 "top_k": top_k
