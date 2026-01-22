@@ -50,16 +50,10 @@ def cached_rag_chain(_llm, k, use_mmr, use_bm25, use_rerank, system, prompt):
 
 # Sidebar controls
 st.sidebar.header("Settings")
-top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 10, 6)
+top_k = st.sidebar.slider("Max sources to return (top_k)", 1, 10, 5)
 use_mmr = st.sidebar.checkbox("Use MMR retrieval", value=True)
 use_bm25 = st.sidebar.checkbox("Use BM25 hybrid retrieval", value=True)
 use_rerank = st.sidebar.checkbox("Use cross-encoder reranking", value=True)
-
-if st.sidebar.button("Re-run ingestion"):
-    with st.spinner("Re-running ingestion..."):
-        cached_corpus.clear()
-        cached_corpus()
-        st.success("Ingestion complete — caches cleared.")
 
 # Build the RAG gate and chatbot chains
 cached_corpus()
@@ -82,6 +76,9 @@ with st.container():
             gate = parse_gate_decision(query, result.get("context"))
 
         if not gate:
+            with st.spinner("Insufficient context, searching web sources..."):
+                cached_corpus()
+
             with st.spinner("Retrieving context and generating answer..."):
                 result = rag_chain.invoke({
                     "input": query,

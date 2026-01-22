@@ -31,7 +31,10 @@ def _bm25_retriever_from_chroma(vectordb, k):
         Document(page_content=t, metadata=m or {})
         for t, m in zip(raw["documents"], raw["metadatas"])
     ]
-    return BM25Retriever.from_documents(docs, k=k)
+    if docs:
+        return BM25Retriever.from_documents(docs, k=k)
+    
+    return None
 
 
 def build_retriever(k = 6, use_mmr = True, use_bm25 = True, use_rerank = True):
@@ -44,7 +47,8 @@ def build_retriever(k = 6, use_mmr = True, use_bm25 = True, use_rerank = True):
     if use_bm25:
         bm25 = _bm25_retriever_from_chroma(vectordb, k=k)
         # Hybrid: BM25 stabilizes keyword hits; dense handles paraphrase/semantic drift
-        retriever = EnsembleRetriever(retrievers=[bm25, base], weights=[0.3, 0.7])
+        if bm25 is not None:
+            retriever = EnsembleRetriever(retrievers=[bm25, base], weights=[0.3, 0.7])
 
     if use_rerank:
         reranker = HuggingFaceCrossEncoder(model_name=RERANK_MODEL, model_kwargs={"device": "cpu"})

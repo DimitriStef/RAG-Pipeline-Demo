@@ -15,6 +15,7 @@ def chunk_fragments(fragments):
         stopword_removal=False,
         normalize_text=False,
         headers_to_split_on=[],
+        keep_separator="end",
     )
 
     splitter_section = HTMLSemanticPreservingSplitter(chunk_overlap=0, **splitter_base)

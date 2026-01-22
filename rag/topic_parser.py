@@ -1,3 +1,4 @@
+from urllib.parse import quote_plus
 # Code for Wikipedia entity linking taken from:
 # https://huggingface.co/facebook/genre-kilt
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -24,4 +25,12 @@ def generate_wikipedia_entities(query):
         # prefix_allowed_tokens_fn=lambda batch_id, sent: trie.get(sent.tolist()),
     )
 
-    return tokenizer.batch_decode(outputs, skip_special_tokens=True)
+    topics = []
+    for topic in tokenizer.batch_decode(outputs, skip_special_tokens=True):
+        topics.append(wikipedia_search_url(topic))
+
+    return topics
+
+
+def wikipedia_search_url(query):
+    return f"https://en.wikipedia.org/wiki/Special:Search?search={quote_plus(query)}&go=Go"

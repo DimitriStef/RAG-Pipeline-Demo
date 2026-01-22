@@ -1,5 +1,12 @@
+from pathlib import Path
 from rag.topic_parser import generate_wikipedia_entities
 from transformers import pipeline
+from utils.config import DATA_DIR
+
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / DATA_DIR
+DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
 qa = pipeline(
@@ -58,6 +65,20 @@ def is_context_sufficient(question, context, margin = 0.01):
     return (s0 - s1) >= margin
 
 
+def write_urls(urls):
+    output = DATA_PATH / "urls.txt"
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    existing = set()
+    if output.exists():
+        existing = set(output.read_text(encoding="utf-8").splitlines())
+
+    new_lines = [link for link in urls if link not in existing]
+    if new_lines:
+        with output.open("a", encoding="utf-8", newline="\n") as f:
+            f.write("\n".join(new_lines) + "\n")
+
+
 def parse_gate_decision(query, context):
 
     context_string = to_context_text(context)
@@ -66,7 +87,9 @@ def parse_gate_decision(query, context):
     if not sufficient:
         topics = generate_wikipedia_entities(query)
         print(f"Identified topics for web crawling: {topics}")
+
+        write_urls(topics)
+                
         return False
-        # TODO: if context is insufficient, trigger topic parser and webcrawler 
 
     return True
