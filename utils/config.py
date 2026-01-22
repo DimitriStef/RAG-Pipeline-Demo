@@ -15,14 +15,7 @@ CHATBOT_SYSTEM = "You are a summariser. You do not speak as a person." \
                 "Keep your sentences short, and your answer concise and complete, in nice paragraphs." \
 
 CHATBOT_PROMPT = """ \
-    <|system|>
-    {system}</s>
-
-    <|user|>
-    <context>
     Provided context (might be cut-off/incomplete): {context}
-    </context>
-
-    Question: {input}</s>
-    <|assistant|>
+    Question: {input}
+    Answer in human-like, readable format: \
     """
