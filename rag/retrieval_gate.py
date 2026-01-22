@@ -30,7 +30,7 @@ def to_context_text(ctx):
     return str(ctx)
 
 
-def is_context_sufficient(question, context, margin = 0.05):
+def is_context_sufficient(question, context, margin = 0.01):
     r = qa(question=question, context=context, top_k=2)
 
     # Expect list[dict] for top_k
@@ -68,6 +68,5 @@ def parse_gate_decision(query, context):
         print(f"Identified topics for web crawling: {topics}")
         return False
         # TODO: if context is insufficient, trigger topic parser and webcrawler 
-
 
     return True

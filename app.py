@@ -79,13 +79,14 @@ with st.container():
                 "input": query,
                 "top_k": top_k
             })
-            parse_gate_decision(query, result.get("context"))
+            gate = parse_gate_decision(query, result.get("context"))
 
-        with st.spinner("Retrieving context and generating answer..."):
-            result = rag_chain.invoke({
-                "input": query,
-                "top_k": top_k
-            })
+        if not gate:
+            with st.spinner("Retrieving context and generating answer..."):
+                result = rag_chain.invoke({
+                    "input": query,
+                    "top_k": top_k
+                })
 
         answer = result.get("answer")
 

@@ -9,7 +9,7 @@ RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 TOPIC_MODEL = "facebook/genre-kilt"
 
 # Prompts
-CHATBOT_SYSTEM = "You are a summariser. You do not speak as a person." \
+CHATBOT_SYSTEM = "You are a summariser. " \
                 "Summarise only the provided context. " \
                 "Do not repeat yourself, or the question, in your answer. " \
                 "Keep your sentences short, and your answer concise and complete, in nice paragraphs." \
