@@ -9,3 +9,8 @@ Current features:
 - TinyLlama SLM for answer generation
 - LangChain-based retrieval and orchestration
 - Streamlit interface for interactive querying
+
+TODO:
+- Implement true agentic behaviour with Langgraph
+- Encapsulate functions into Langgraph tools
+- Implement metrics (e.g. recall@k)
